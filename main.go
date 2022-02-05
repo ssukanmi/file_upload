@@ -2,10 +2,22 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
 )
+
+var (
+	indexTemplate *template.Template
+)
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	if err := indexTemplate.Execute(w, nil); err != nil {
+		panic(err)
+	}
+}
 
 func uploadFile(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Uploading File\n")
@@ -23,7 +35,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 	fmt.Printf("Uploaded File: %+v\n", handler.Filename)
-	fmt.Printf("File Sive: %+v\n", handler.Size)
+	fmt.Printf("File Size: %+v\n", handler.Size)
 	fmt.Printf("MIME Header: %+v\n", handler.Header)
 
 	// write temporty file on our server
@@ -48,11 +60,17 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func setupRoutes() {
+	var err error
+	indexTemplate, err = template.ParseFiles("index.html")
+	if err != nil {
+		panic(err)
+	}
+	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/upload", uploadFile)
 	http.ListenAndServe(":8080", nil)
 }
 
 func main() {
-	fmt.Println("Go file upload")
+	fmt.Println("Go file upload server started")
 	setupRoutes()
 }
